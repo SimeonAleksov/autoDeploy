@@ -33,17 +33,13 @@ def check_web_type():
     else:
         return 0
 
+def get_repo_name(gitUrl):
+    return gitUrl.rsplit('/', 1)[1]
 
-# I'm doing this because I need to copy the page content to the www/html, I'm doing this because I have no idea what your repo will be called,
-# There's probably better way of doing this, but for now it be like this
 def handle_repos(gitlink):
-    create_dir = "sudo mkdir ignoreThis"
-    change_dir = "cd ignoreThis"
     _clone = "sudo git clone " + gitlink
-    _back = "cd .. "
-    copy_web = "cp -r ignoreThis/*/. /var/www/html"
-    return create_dir, change_dir, _clone, _back, copy_web
-
+    dir_name = get_repo_name(gitlink)
+    copy_web = "cp -r %s/. /var/www/html" %dir_name
 # Before we copy anything we need to clear our html directory
 def clear_apache_html():
     return "sudo rm -rf /var/www/html/*"
@@ -52,4 +48,27 @@ def clear_apache_html():
 def reload_apache():
     return "sudo /etc/init.d/apache2 reload"
 
+# This is for jekyll, we need to install ruby.
+def install_ruby():
+    return "sudo apt-get install ruby-full build-essential zlib1g-dev"
+
+# It's best to avoid installing Ruby Gems as the root user.
+# We might not need this, but we'll check later. 
+"""def setup_env():
+    _gem = "echo '# Install Ruby Gems to ~/gems' >> ~/.bashrc"
+    _export_gem = "echo 'export GEM_HOME="$HOME/gems"' >> ~/.bashrc"
+    _export_path = "echo 'export PATH="$HOME/gems/bin:$PATH"' >> ~/.bashrc"
+    fin = "source ~/.bashrc"
+    return _gem, _export_gem, _export_path, fin
+"""
+# Finally, we'll installing jekyll
+
+def install_jekyll():
+    return "gem install jekyll bundler"
+
+# We need to build our site, and we need to run this in the github jekyll repo
+def jekyll_build():
+    return "jekyll build"
+
+    
 connect()
