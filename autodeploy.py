@@ -1,17 +1,55 @@
 import paramiko
+import pyfiglet
+import time
+from tqdm import tqdm
+import getpass
+from multiprocessing import Process
+from threading import Thread
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def loading():
+    for i in tqdm(range(100), desc="Connecting"):
+        time.sleep(0.05)
+def setting_up_html():
+    for i in tqdm(range(100), desc="Installing"):
+        time.sleep(0.1)
+def output():
+    welcome_banner = pyfiglet.figlet_format("autoDeploy")
+    print(welcome_banner)
 # Basic attempt to connect to a server via ssh, will update for other choices later.
+def get_user_info():
+    host_name = input("Please enter the host ip: ")
+    username = input("Please enter the username on the machine: ")
+    pw = getpass.getpass("Please enter the password: ")
+    gitRepo = input("Please enter github repo link: ")
+    return host_name, username, pw, gitRepo
+    
 def connect(host=None, user=None, pw=None):
-    print('Attempting to connect')
+    # print('Attempting to connect')
     ssh = paramiko.SSHClient()
     # For now, we'll connect without key
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, port=22, username=user, password=pw)
-    # Really simple way to check if my connection is active, I'll find better solution later
-    (stdIn, stOut, stdErr) = ssh.exec_command('whoami')
-    output = stOut.read()
-    print(output.decode('utf-8'))
-    print('connected')
+    # loading()
+    try:
+        ssh.connect(host, port=22, username=user, password=pw)
+        # Really simple way to check if my connection is active, I'll find better solution later
+        (stdIn, stOut, stdErr) = ssh.exec_command('whoami')
+        output = stOut.read()
+        # print(output.decode('utf-8'))
+        # print('Connected!')
+        print(bcolors.OKGREEN + "Connection established successfully!" + bcolors.ENDC)
+    except Exception as e:
+        print(bcolors.FAIL + "Connection failed, try again." + bcolors.ENDC)
+
 
 # After we connect to the machine, we need to update linux packages, repos
 def update_rep():
@@ -71,4 +109,15 @@ def jekyll_build():
     return "jekyll build"
 
     
-connect()
+if __name__ == "__main__":
+    output()
+    host_name, username, pw, gitRepo = get_user_info()
+    threads = []
+    t = Thread(target=loading())
+    threads.append(t)
+    t1 = Thread(target=connect(host_name, username, pw))
+    threads.append(t1)
+    for x in threads:
+        x.start()
+    for x in threads:
+        x.join()
