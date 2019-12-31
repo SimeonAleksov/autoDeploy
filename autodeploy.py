@@ -17,7 +17,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 def loading():
-    for i in tqdm(range(100), desc="Connecting"):
+    for i in tqdm(range(100), desc=bcolors.OKBLUE + "Connecting" + bcolors.BOLD):
         time.sleep(0.05)
 def setting_up_html():
     for i in tqdm(range(100), desc="Installing"):
@@ -31,6 +31,7 @@ def get_user_info():
     username = input("Please enter the username on the machine: ")
     pw = getpass.getpass("Please enter the password: ")
     gitRepo = input("Please enter github repo link: ")
+    print(bcolors.WARNING + "Connecting to machine '{0}', with username '{1}'.".format(host_name, username) + bcolors.ENDC)
     return host_name, username, pw, gitRepo
     
 def connect(host=None, user=None, pw=None):
