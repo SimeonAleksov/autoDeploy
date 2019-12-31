@@ -5,6 +5,7 @@ from tqdm import tqdm
 import getpass
 from multiprocessing import Process
 from threading import Thread
+import sys
 
 class bcolors:
     HEADER = '\033[95m'
@@ -19,8 +20,8 @@ class bcolors:
 def loading():
     for i in tqdm(range(100), desc=bcolors.OKBLUE + "Connecting" + bcolors.BOLD):
         time.sleep(0.05)
-def setting_up_html():
-    for i in tqdm(range(100), desc="Installing"):
+def installing():
+    for i in tqdm(range(100), desc=bcolors.OKGREEN + "Installing" + bcolors.BOLD):
         time.sleep(0.1)
 def output():
     welcome_banner = pyfiglet.figlet_format("autoDeploy")
@@ -33,8 +34,17 @@ def get_user_info():
     gitRepo = input("Please enter github repo link: ")
     print(bcolors.WARNING + "Connecting to machine '{0}', with username '{1}'.".format(host_name, username) + bcolors.ENDC)
     return host_name, username, pw, gitRepo
-    
+
+# Function to check if our connection is alive. 
+def is_alive():
+    if ssh.get_transport() is not None:
+         ssh.get_transport().is_active()
+         return True
+    else:
+        return False
+
 def connect(host=None, user=None, pw=None):
+    global ssh
     # print('Attempting to connect')
     ssh = paramiko.SSHClient()
     # For now, we'll connect without key
@@ -50,7 +60,6 @@ def connect(host=None, user=None, pw=None):
         print(bcolors.OKGREEN + "Connection established successfully!" + bcolors.ENDC)
     except Exception as e:
         print(bcolors.FAIL + "Connection failed, try again." + bcolors.ENDC)
-
 
 # After we connect to the machine, we need to update linux packages, repos
 def update_rep():
@@ -68,17 +77,22 @@ def install_apache():
 def check_web_type():
     user_input = input("Do you want to deploy static html/css webpage? (Y/n)")
     if user_input.lower() == 'y':
-        return 1
+        return True
     else:
-        return 0
+        return False
 
+# We're getting the repo/dir name from the url the users given us
 def get_repo_name(gitUrl):
     return gitUrl.rsplit('/', 1)[1]
 
+# Handling our repo, copying it straight to our apache html 
 def handle_repos(gitlink):
+    global dir_name
     _clone = "sudo git clone " + gitlink
     dir_name = get_repo_name(gitlink)
     copy_web = "cp -r %s/. /var/www/html" %dir_name
+    return _clone, dir_name, copy_web
+
 # Before we copy anything we need to clear our html directory
 def clear_apache_html():
     return "sudo rm -rf /var/www/html/*"
@@ -108,8 +122,38 @@ def install_jekyll():
 # We need to build our site, and we need to run this in the github jekyll repo
 def jekyll_build():
     return "jekyll build"
+# Simple bash line to check if file exists, going to need it later to determine path for apache conf 
+def check_if_exists(file):
+    return "test -e {0} && echo True || echo False".format(file)
 
-    
+# If the user doesn't know where the apache conf is located it, we'll determine
+# It's usually in some of these dirs
+def find_apache_conf():
+    valid_paths = {}
+    # Oops.. forgot to use my function..
+    first_location = "test -e /etc/apache2/httpd.conf && echo True || echo False"
+    second_location = "test -e /etc/apache2/apache2.conf && echo True || echo False"
+    third_location = "test -e /etc/httpd/httpd.conf && echo True || echo False"
+    forth_location = "test -e /etc/httpd/conf/httpd.conf && echo True || echo False"
+    for test in first_location, second_location, third_location, forth_location:
+        (_, std1Out, _) = ssh.exec_command(test)
+        finOutput = std1Out.read()
+        valid_paths[test.split(' ')[2]] = finOutput.decode('utf')
+    for key, value in valid_paths.items():
+        if "".join(value.split()) == 'True':
+            return key
+
+# Simple bash line to find public IP
+def get_server_ip():
+    return "ip route get 1 | awk '{print $NF; exit}'"
+
+# If we want to modify our apache conf to use our domain name, usage:
+# dns_setup('simeonaleksov.codes', '/etc/apache2/apache2.conf')
+# If we don't know the path to our apache conf, we can call our function to find it.
+def dns_setup(dns_string, apache_conf_path):
+    for line in dns_string.splitlines():
+        ssh.exec_command("echo '{0}' >> {1}".format(line, apache_conf_path))
+
 if __name__ == "__main__":
     output()
     host_name, username, pw, gitRepo = get_user_info()
@@ -122,3 +166,23 @@ if __name__ == "__main__":
         x.start()
     for x in threads:
         x.join()
+    if is_alive():
+        ssh.exec_command(update_rep())
+        installing()
+        # ssh.exec_command(install_apache)
+        (stdIn, stOut, stdErr) = ssh.exec_command(check_if_exists("/var/www/html"))
+        output = stOut.read()
+        if output.decode('utf-8'):
+            ssh.exec_command(clear_apache_html())
+            clone, dir_name, copy_web  = handle_repos(gitRepo)
+            ssh.exec_command(clone)
+            ssh.exec_command(copy_web)
+            (stdIn, stdOut, stdErr) = ssh.exec_command(get_server_ip())
+            output1 = stdOut.read()
+            installing()
+            print(bcolors.OKGREEN + "Web site successfully installed. You can check your website on {0}".format(output1.decode('utf-8')))
+        else:
+            print("Apache server still not installed")
+    else:
+        print(bcolors.WARNING + "Connection is dead, please try again connecting again." + bcolors.ENDC)
+        sys.exit()
