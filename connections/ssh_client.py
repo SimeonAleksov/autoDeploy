@@ -37,7 +37,3 @@ class SSH(object):
     @property
     def get_ssh(self):
         return self.ssh
-
-# client = SSH('83.212.126.194', 'user', 'root123', paramiko.SSHClient())
-# client.connect()
-# print(client.execute('mkdir test2')
