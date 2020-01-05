@@ -31,6 +31,9 @@ class Linux(object):
     def handle_repos(self):
         global dir_name
         _clone = "sudo git clone " + self.git_link
-        dir_name = self.get_repo_name(self.git_link)
-        copy_web = "cp -r %s/. /var/www/html" %dir_name
-        return _clone, dir_name, copy_web
+        dir_name = self.get_repo_name()
+        copy_web = "sudo cp -r %s/. /var/www/html" %dir_name
+        cmds = []
+        cmds.append(_clone)
+        cmds.append(copy_web)
+        return cmds

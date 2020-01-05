@@ -8,14 +8,16 @@ from ssh_client import SSH
 from loading import *
 from user_input import *
 from colors import bcolors
-
+import time
+import paramiko
 if __name__ == "__main__":
     welcome_banner()
     host_name, username, pw, gitRepo = get_user_info()
-    client = SSH(host_name, username, pw)
+    # client = SSH(host_name, username, pw, paramiko.SSHClient())
+    client = SSH('83.212.126.194','user', 'root123', paramiko.SSHClient())
     threads = []
-    t = Thread(target=loading())
-    threads.append(t)
+    # t = Thread(target=loading())
+    # threads.append(t)
     t1 = Thread(target=client.connect())
     threads.append(t1)
     for x in threads:
@@ -25,18 +27,24 @@ if __name__ == "__main__":
     if client.is_alive():
         web_type = check_web_type()
         if check_continue():
-            installing()
+            # installing()
             linux_cmd = Linux(gitRepo)
-            client.execute('sudo -i')
-            # print(linux_cmd.update_rep())
-            print(client.execute('sudo apt-get update'))
-            client.execute('/etc/init.d/httpd status')
-            client.execute(linux_cmd.update_rep())
-            client.execute(linux_cmd.install_apache())
-            # client.execute(linux_cmd.clear_apache_html())
-            # _clone, dir_name, copy_web = linux_cmd.handle_repos()
-            # client.execute(_clone)
-            # client.execute(copy_web)
-            client.execute(linux_cmd.reload_apache())
-            # server_ip = client.execute(linux_cmd.get_server_ip())
+            commands = []
+            commands.append(linux_cmd.update_rep())
+            clone, copy = linux_cmd.handle_repos()
+            commands.append(clone)
+            commands.append(copy)
+            commands.append(linux_cmd.reload_apache())
+            print(commands)
+            sys.exit()
+            for cmd in commands:
+                status_code, output = client.execute(cmd)
+                time.sleep(5)
+                if status_code == 0:
+                    print(output.decode('utf-8'))
+                    print('Success')
+                else:
+                    print(output.decode('utf-8'))
+                    print(f"Error {status_code}")
+
             print(f"{bcolors.OKGREEN} Installing website successful. You can check it here ")

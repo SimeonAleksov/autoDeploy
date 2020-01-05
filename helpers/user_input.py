@@ -13,18 +13,18 @@ def get_user_info():
 
 def check_web_type():
     print(f"{bcolors.WARNING}Please select what kind of website you're building: {bcolors.ENDC}")
-    print(bcolors.OKGREEN + "[J]ekyll, [S]tatic HTML/CSS, [L]aravel")
-    user_input = input(bcolors.OKGREEN + "-->")
+    print(f"{bcolors.OKGREEN}[J]ekyll, [S]tatic HTML/CSS, [L]aravel{bcolors.ENDC}")
+    user_input = input("-->")
     while True:
         if user_input.lower() not in ('j', 's', 'l'):
             print(f"{bcolors.WARNING}Please enter valid input.{bcolors.ENDC}")
-            user_input = input(bcolors.OKGREEN + "-->")
+            user_input = input("-->")
         else:
             break
     return user_input
 
 def check_continue():
-    _user = input(f"{bcolors.WARNING}Are you sure you want to continue? (Clean /var/www/html/ and install repo)? [Y/n]{bcolors.ENDC}")
+    _user = input("Are you sure you want to continue? (Clean /var/www/html/ and install repo)? [Y/n]")
     if _user.lower() == 'y':
         return True
     else:
