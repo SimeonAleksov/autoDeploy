@@ -10,7 +10,4 @@ def change_dns(dns_Name):
     return dns_string
 def dns_setup(dns_string, apache_conf_path, ssh):
     for line in dns_string.splitlines():
-        something = "echo '{0}' >> {1}".format(dns_string, apache_conf_path)
-        
-for i in change_dns('simeonaleksov.com').splitlines():
-    print(i)
+        something = "echo '{0}' >> {1}".format(dns_string, apache_conf_path
