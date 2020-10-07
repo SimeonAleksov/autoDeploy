@@ -2,8 +2,6 @@
 
 For now, the script works only for static websites.
 
-For this to work, you'll need to install paramiko.
-
 
 ```sh
 $: autodeploy.py
